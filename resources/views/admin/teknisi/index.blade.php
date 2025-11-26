@@ -1,9 +1,10 @@
 @extends('layout.index')
 
-@section('title', 'Data Berita Acara')
+@section('title', 'Daftar Teknisi')
 
 @section('content')
     <div class="container mt-5">
+        <!-- FAVICON -->
         <link rel="icon" type="image/png" href="{{ asset('storage/images/mgdt.png') }}">
 
         <!-- DROPDOWN AKUN - POJOK KANAN ATAS -->
@@ -25,10 +26,7 @@
                             <i class="fas fa-user-shield"></i> Profil Admin
                         </button>
                     </li>
-                    <li>
-                        <hr class="dropdown-divider mx-3">
-                    </li>
-
+                    <li><hr class="dropdown-divider mx-3"></li>
                     <!-- Logout -->
                     <li>
                         <form action="{{ route('logout') }}" method="POST" class="d-inline">
@@ -48,9 +46,9 @@
         <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
             <div class="card-header bg-primary text-white text-center py-4">
                 <h1 class="h4 fw-bold mb-1">
-                    <i class="fas fa-file-alt me-2"></i> Data Berita Acara
+                    <i class="fas fa-users me-2"></i> Daftar Teknisi
                 </h1>
-                <small class="opacity-75">Kelola data registrasi pelanggan</small>
+                <small class="opacity-75">Kelola akun teknisi terdaftar</small>
             </div>
 
             <div class="card-body p-4">
@@ -63,50 +61,12 @@
                     </div>
                 @endif
 
-                @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
-                        <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
-                <!-- Tombol Aksi: Export (Kiri) | Tambah Data (Kanan) -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-
-                    <!-- Kiri: Form Export Excel -->
-                    <form action="{{ route('berita_acara.export.excel') }}" method="GET"
-                        class="d-flex flex-column flex-md-row gap-2 align-items-center">
-
-                        <select name="bulan" required class="form-select form-select-sm shadow-sm rounded-pill"
-                            style="min-width: 130px;">
-                            <option value="" hidden>Pilih Bulan</option>
-                            @for ($i = 1; $i <= 12; $i++)
-                                <option value="{{ $i }}">
-                                    {{ DateTime::createFromFormat('!m', $i)->format('F') }}
-                                </option>
-                            @endfor
-                        </select>
-
-                        <select name="tahun" required class="form-select form-select-sm shadow-sm rounded-pill"
-                            style="min-width: 110px;">
-                            <option value="" hidden>Pilih Tahun</option>
-                            @for ($y = 2023; $y <= date('Y'); $y++)
-                                <option value="{{ $y }}">{{ $y }}</option>
-                            @endfor
-                        </select>
-
-                        <button type="submit"
-                            class="btn btn-outline-success d-flex align-items-center gap-2 px-4 py-2 fw-medium shadow-sm rounded-pill">
-                            <i class="fas fa-file-excel"></i>
-                            Export Excel
-                        </button>
-                    </form>
-
-                    <!-- Kanan: Tambah Data -->
-                    <a href="{{ url('/berita-acara/create') }}"
+                <!-- Tombol Aksi: Tambah Data (Kanan) -->
+                <div class="d-flex justify-content-end align-items-center mb-4">
+                    <a href="{{ route('admin.teknisi.create') }}"
                         class="btn btn-success d-flex align-items-center gap-2 px-4 py-2 fw-medium shadow-sm rounded-pill">
-                        <i class="fas fa-plus"></i>
-                        Tambah Data
+                        <i class="fas fa-user-plus"></i>
+                        Tambah Teknisi
                     </a>
                 </div>
 
@@ -117,86 +77,51 @@
                             <tr>
                                 <th class="text-center" style="width: 50px;">No</th>
                                 <th>Nama Lengkap</th>
-                                <th>No KTP</th>
-                                <th>Perangkat</th>
-                                <th>Paket</th>
-                                <th>Teknisi</th>
-                                <th>Tanggal</th>
-                                <th class="text-center" style="width: 180px;">Aksi</th>
+                                <th>Email</th>
+                                <th>No HP</th>
+                                <th>Alamat</th>
+                                <th class="text-center" style="width: 100px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($beritaAcaras as $acara)
+                            @forelse($teknisi as $t)
                                 <tr>
                                     <td class="text-center fw-bold">{{ $loop->iteration }}</td>
-                                    <td>{{ $acara->nama_lengkap }}</td>
-                                    <td>{{ $acara->no_ktp }}</td>
+                                    <td class="fw-medium">{{ $t->name }}</td>
                                     <td>
-                                        <span class="badge bg-info text-dark">{{ $acara->jenis_perangkat }}</span>
+                                        <i class="fas fa-envelope text-success me-1"></i>
+                                        <small class="text-muted">{{ $t->email }}</small>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">{{ $acara->paket_berlangganan }}</span>
+                                        <i class="fas fa-phone text-primary me-1"></i>
+                                        <small>{{ $t->no_hp ?? '-' }}</small>
                                     </td>
                                     <td>
-                                        <div>
-                                            <div class="fw-medium">{{ $acara->nama_teknisi_1 }}</div>
-                                            <div class="fw-medium">{{ $acara->nama_teknisi_2 }}</div>
-                                        </div>
+                                        <i class="fas fa-map-marker-alt text-warning me-1"></i>
+                                        <small title="{{ $t->alamat }}">
+                                            {{ $t->alamat ? Str::limit($t->alamat, 30) : '-' }}
+                                        </small>
                                     </td>
-                                    <td>{{ \Carbon\Carbon::parse($acara->tanggal_registrasi)->format('d/m/Y') }}</td>
                                     <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1 flex-wrap">
-                                            <!-- Detail -->
-                                            <a href="{{ route('berita_acara.show', $acara->id) }}"
-                                                class="btn btn-sm btn-primary d-flex align-items-center gap-1 rounded-pill"
-                                                title="Lihat Detail">
-                                                <i class="fas fa-eye"></i> <span class="d-none d-sm-inline">Detail</span>
-                                            </a>
-
-                                            <!-- Edit -->
-                                            <a href="{{ route('berita_acara.edit', $acara->id) }}"
-                                                class="btn btn-sm btn-warning d-flex align-items-center gap-1 rounded-pill"
-                                                title="Edit Data">
-                                                <i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Edit</span>
-                                            </a>
-
-                                            <!-- PDF -->
-                                            <a href="{{ route('berita_acara.pdf', $acara->id) }}"
-                                                class="btn btn-sm btn-danger d-flex align-items-center gap-1 rounded-pill"
-                                                title="Download PDF">
-                                                <i class="fas fa-file-pdf"></i> <span
-                                                    class="d-none d-sm-inline">PDF</span>
-                                            </a>
-
-                                            <!-- Chat (WhatsApp) -->
-                                            <a href="{{ route('berita_acara.sendWhatsapp', $acara->id) }}"
-                                                class="btn btn-sm btn-success text-white d-flex align-items-center gap-1 rounded-pill"
-                                                title="Kirim via WhatsApp" target="_blank">
-                                                <i class="fab fa-whatsapp"></i> <span
-                                                    class="d-none d-sm-inline">Chat</span>
-                                            </a>
-
-                                            <!-- Hapus -->
-                                            <form action="{{ route('berita_acara.destroy', $acara->id) }}" method="POST"
-                                                onsubmit="return confirm('Yakin ingin menghapus data ini?')"
-                                                style="display:inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="btn btn-sm btn-dark d-flex align-items-center gap-1 rounded-pill"
-                                                    title="Hapus Data">
-                                                    <i class="fas fa-trash"></i> <span
-                                                        class="d-none d-sm-inline">Hapus</span>
-                                                </button>
-                                            </form>
-                                        </div>
+                                        <form action="{{ route('admin.teknisi.destroy', $t->id) }}" method="POST"
+                                            onsubmit="return confirm('Yakin ingin menghapus teknisi ini?')"
+                                            style="display:inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                class="btn btn-sm btn-dark d-flex align-items-center gap-1 rounded-pill"
+                                                title="Hapus Teknisi">
+                                                <i class="fas fa-trash"></i>
+                                                <span class="d-none d-sm-inline">Hapus</span>
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5 text-muted">
-                                        <i class="fas fa-folder-open fa-3x mb-3 opacity-50"></i>
-                                        <p class="mb-0">Belum ada data berita acara</p>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-users-slash fa-3x mb-3 opacity-50"></i>
+                                        <p class="mb-0">Belum ada data teknisi</p>
                                     </td>
                                 </tr>
                             @endforelse
@@ -205,13 +130,14 @@
                 </div>
 
                 <!-- Pagination -->
-                @if (method_exists($beritaAcaras, 'links'))
+                @if (method_exists($teknisi, 'links'))
                     <div class="mt-4 d-flex justify-content-center">
-                        {{ $beritaAcaras->links() }}
+                        {{ $teknisi->links() }}
                     </div>
                 @endif
             </div>
         </div>
+
         <!-- MODAL PROFIL ADMIN -->
         <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel"
             aria-hidden="true">
@@ -268,15 +194,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Auto Open WhatsApp -->
-    @if (session('whatsapp_url'))
-        <script>
-            setTimeout(() => {
-                window.open('{{ session('whatsapp_url') }}', '_blank');
-            }, 600);
-        </script>
-    @endif
 
     <style>
         /* Card & Header */
@@ -345,22 +262,6 @@
             text-align: center;
         }
 
-        /* Form Export Rapi */
-        .form-select-sm {
-            min-width: 130px;
-            font-size: 0.875rem;
-            padding: 0.375rem 0.75rem;
-            height: calc(1.5em + 0.75rem + 2px);
-            border-radius: 12px;
-            border: 1px solid #ced4da;
-            transition: border-color 0.2s ease;
-        }
-
-        .form-select-sm:focus {
-            border-color: #4361ee;
-            box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
-        }
-
         /* Tabel */
         .table th {
             font-weight: 600;
@@ -369,28 +270,22 @@
             letter-spacing: 0.5px;
         }
 
-        .badge {
-            font-size: 0.75rem;
-            padding: 0.4em 0.8em;
-        }
-
         .table tbody tr:hover {
             background-color: #f8f9fa;
         }
 
+        /* Ikon di Tabel */
+        .table i {
+            font-size: 0.9rem;
+        }
+
+        /* Empty State */
+        .text-center.py-5 i {
+            color: #adb5bd;
+        }
+
         /* Responsif */
         @media (max-width: 768px) {
-            .d-flex.gap-2 {
-                flex-direction: column;
-            }
-
-            .form-select-sm {
-                width: 100% !important;
-                min-width: auto !important;
-                font-size: 0.85rem;
-                padding: 0.4rem 0.6rem;
-            }
-
             .btn {
                 font-size: 0.875rem;
                 padding: 0.5rem 0.8rem;
@@ -416,6 +311,12 @@
             .dropdown-toggle {
                 padding: 0.5rem 0.75rem !important;
             }
+
+            .table th,
+            .table td {
+                font-size: 0.8rem;
+                padding: 0.5rem;
+            }
         }
 
         /* Modal Profil */
@@ -440,19 +341,6 @@
 
         .badge {
             font-size: 0.85rem;
-        }
-
-        /* Responsif Modal */
-        @media (max-width: 576px) {
-            #profileModal .modal-dialog {
-                margin: 1rem;
-            }
-
-            .initial-avatar {
-                width: 90px !important;
-                height: 90px !important;
-                font-size: 2.5rem !important;
-            }
         }
     </style>
 @endsection

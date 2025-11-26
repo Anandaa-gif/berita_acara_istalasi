@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\BeritaAcaraController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TeknisiController;
 use App\Http\Controllers\UserViewController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +31,7 @@ Route::get('/pelanggan/berita-acara/{id}/pdf', [PelangganController::class, 'exp
 
 
 Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('/berita-acara', [BeritaAcaraController::class, 'index'])->name('berita_acara.index');
     Route::get('/berita-acara/create', [BeritaAcaraController::class, 'create'])->name('berita_acara.create');
     Route::post('/berita-acara/store', [BeritaAcaraController::class, 'store'])->name('berita_acara.store');
@@ -39,6 +42,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/berita-acara/{id}/pdf', [BeritaAcaraController::class, 'exportPdf'])->name('berita_acara.pdf');
     Route::get('/berita-acara/{id}/send-whatsapp', [BeritaAcaraController::class, 'sendWhatsapp'])->name('berita_acara.sendWhatsapp');
     Route::get('/berita-acara/export/excel', [BeritaAcaraController::class, 'export'])->name('berita_acara.export.excel');
+
+
+    Route::get('/admin/teknisi', [TeknisiController::class, 'index'])->name('admin.teknisi.index');
+    Route::get('/admin/teknisi/create', [TeknisiController::class, 'create'])->name('admin.teknisi.create');
+    Route::post('/admin/teknisi/store', [TeknisiController::class, 'store'])->name('admin.teknisi.store');
+    Route::delete('/admin/teknisi/{id}', [TeknisiController::class, 'destroy'])->name('admin.teknisi.destroy');
+
+
 
 });
 require __DIR__ . '/auth.php';

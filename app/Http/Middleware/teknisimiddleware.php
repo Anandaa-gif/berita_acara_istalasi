@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class TeknisiMiddleware
+class teknisimiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {

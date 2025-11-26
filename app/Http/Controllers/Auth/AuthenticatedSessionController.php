@@ -29,7 +29,7 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user();
         switch ($user->role) {
             case 'admin':
-                return redirect()->route('berita_acara.index');
+                return redirect()->route('dashboard.index');
             case 'teknisi':
                 return redirect()->route('user.index');
             default:

@@ -689,7 +689,7 @@
                     // Redirect berdasarkan role dari response
                     setTimeout(() => {
                         if (data.role === 'admin') {
-                            window.location.href = '/berita-acara';
+                            window.location.href = '/dahsborad/index';
                         } else if (data.role === 'teknisi') {
                             window.location.href = '/user/index';
                         } else {
