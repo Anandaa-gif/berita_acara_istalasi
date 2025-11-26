@@ -11,6 +11,9 @@ use Illuminate\Validation\Rule;
 
 class TeknisiController extends Controller
 {
+    /**
+     * Menampilkan daftar teknisi
+     */
     public function index()
     {
         $teknisi = User::where('role', 'teknisi')
@@ -20,37 +23,42 @@ class TeknisiController extends Controller
         return view('admin.teknisi.index', compact('teknisi'));
     }
 
+    /**
+     * Menampilkan form tambah teknisi
+     */
     public function create()
     {
         return view('admin.teknisi.create');
     }
 
+    /**
+     * Menyimpan teknisi baru + kirim WhatsApp otomatis
+     */
     public function store(Request $request)
     {
         $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
-            'alamat'   => 'required|string|max:500',
+            'password' => 'required|min:6|confirmed',
+            'alamat'   => 'required|string',
             'no_hp'    => [
                 'required',
-                'regex:/^08[0-9]{8,11}$/',
+                'regex:/^08[0-9]{8,11}$/', // 08 + 8-11 digit → total 10-13 digit
                 Rule::unique('users', 'no_hp'),
             ],
         ], [
-            'name.required'       => 'Nama lengkap wajib diisi.',
-            'email.required'      => 'Email wajib diisi.',
-            'email.email'         => 'Format email tidak valid.',
-            'email.unique'        => 'Email sudah digunakan.',
-            'password.required'   => 'Password wajib diisi.',
-            'password.min'        => 'Password minimal 8 karakter.',
-            'password.confirmed'  => 'Konfirmasi password tidak cocok.',
-            'alamat.required'     => 'Alamat wajib diisi.',
-            'no_hp.required'      => 'Nomor HP wajib diisi.',
-            'no_hp.regex'         => 'Nomor HP harus diawali 08 dan panjang 10-13 angka.',
-            'no_hp.unique'        => 'Nomor HP sudah terdaftar.',
+            'name.required'        => 'Nama wajib diisi.',
+            'email.required'       => 'Email wajib diisi.',
+            'email.unique'         => 'Email sudah terdaftar.',
+            'password.required'    => 'Password wajib diisi.',
+            'password.confirmed'   => 'Konfirmasi password tidak cocok.',
+            'alamat.required'      => 'Alamat wajib diisi.',
+            'no_hp.required'       => 'Nomor HP wajib diisi.',
+            'no_hp.regex'          => 'Nomor HP harus diawali 08 dan berisi 10-13 angka.',
+            'no_hp.unique'         => 'Nomor HP sudah terdaftar.',
         ]);
 
+        // Buat teknisi
         $teknisi = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
@@ -60,7 +68,7 @@ class TeknisiController extends Controller
             'role'     => 'teknisi',
         ]);
 
-        // OTOMATIS kirim WA selamat datang
+        // Kirim WA selamat datang (password masih plaintext di sini)
         $this->kirimWelcomeWATeknisi($teknisi, $request->password);
 
         return redirect()
@@ -68,14 +76,14 @@ class TeknisiController extends Controller
             ->with('success', 'Teknisi berhasil ditambahkan & notifikasi WhatsApp otomatis terkirim!');
     }
 
-    private function kirimWelcomeWATeknisi($teknisi, $plainPassword)
+    /**
+     * Kirim pesan selamat datang via WhatsApp (Watzap.id / Wablas / Fonnte / dll)
+     */
+    private function kirimWelcomeWATeknisi(User $teknisi, string $plainPassword): void
     {
         try {
-            // Konversi 08xxx → 62xxx (WAJIB untuk Watzap.id)
-            $phone = $teknisi->no_hp;
-            if (substr($phone, 0, 1) === '0') {
-                $phone = '62' . substr($phone, 1);
-            }
+            // Ubah 08xxx → 62xxx (format internasional WA)
+            $phone = preg_replace('/^0/', '62', $teknisi->no_hp);
 
             $message = "*SELAMAT DATANG DI TIM MEGADATA ISP!*\n\n" .
                 "Halo *{$teknisi->name}*,\n\n" .
@@ -93,7 +101,6 @@ class TeknisiController extends Controller
                 "Salam cepat,\n" .
                 "*Tim MEGADATA ISP Besuki*";
 
-            // PERBAIKAN UTAMA: GANTI asForm() → JSON + header
             $response = Http::timeout(30)
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post('https://api.watzap.id/v1/send_message', [
@@ -105,22 +112,28 @@ class TeknisiController extends Controller
                 ]);
 
             if ($response->successful() && str_contains(strtolower($response->body()), 'success')) {
-                Log::info("Welcome WA terkirim ke teknisi: {$phone}");
+                Log::info("Welcome WA berhasil terkirim ke teknisi: {$phone}");
             } else {
                 Log::warning("Gagal kirim welcome WA ke teknisi {$phone}: " . $response->body());
             }
         } catch (\Exception $e) {
-            Log::error("Error kirim welcome WA teknisi: " . $e->getMessage());
+            Log::error("Error kirim welcome WA teknisi {$teknisi->name}: " . $e->getMessage());
         }
     }
 
+    /**
+     * Hapus teknisi
+     */
     public function destroy($id)
     {
         $teknisi = User::findOrFail($id);
+
         if ($teknisi->role !== 'teknisi') {
             return back()->with('error', 'Tidak dapat menghapus: bukan data teknisi!');
         }
+
         $teknisi->delete();
+
         return back()->with('success', 'Teknisi berhasil dihapus.');
     }
 }
