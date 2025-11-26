@@ -5,45 +5,6 @@
 @section('content')
     <div class="container mt-5">
         <link rel="icon" type="image/png" href="{{ asset('storage/images/mgdt.png') }}">
-
-        <!-- DROPDOWN AKUN - POJOK KANAN ATAS -->
-        <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-            <div class="dropdown">
-                <button
-                    class="btn btn-outline-primary dropdown-toggle d-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2"
-                    type="button" id="dropdownAccount" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-user-circle fa-lg"></i>
-                    <span class="d-none d-sm-inline fw-medium">{{ Auth::user()->name ?? 'User' }}</span>
-                </button>
-
-                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-3"
-                    aria-labelledby="dropdownAccount">
-                    <!-- Profil Admin -->
-                    <li>
-                        <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-primary px-3 py-2"
-                            data-bs-toggle="modal" data-bs-target="#profileModal">
-                            <i class="fas fa-user-shield"></i> Profil Admin
-                        </button>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider mx-3">
-                    </li>
-
-                    <!-- Logout -->
-                    <li>
-                        <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit"
-                                class="dropdown-item d-flex align-items-center gap-2 text-danger px-3 py-2"
-                                onclick="return confirm('Yakin ingin keluar?')">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
         <!-- Card Utama -->
         <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
             <div class="card-header bg-primary text-white text-center py-4">
@@ -210,61 +171,6 @@
                         {{ $beritaAcaras->links() }}
                     </div>
                 @endif
-            </div>
-        </div>
-        <!-- MODAL PROFIL ADMIN -->
-        <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title fw-bold" id="profileModalLabel">
-                            <i class="fas fa-user-shield me-2"></i> Profil Admin
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-5">
-                        <div class="text-center mb-4">
-                            <div class="initial-avatar mx-auto d-flex align-items-center justify-content-center text-white shadow-lg rounded-circle"
-                                style="width: 110px; height: 110px; font-size: 3rem; font-weight: 700;">
-                                {{ substr(Auth::user()->name, 0, 1) }}
-                            </div>
-                            <p class="mt-2 text-muted small">Admin Megadata</p>
-                        </div>
-
-                        <div class="bg-light rounded-3 p-4 border-start border-primary border-4">
-                            <div class="row g-3">
-                                <div class="col-sm-4 fw-bold text-muted">Nama</div>
-                                <div class="col-sm-8 fw-medium">{{ Auth::user()->name }}</div>
-
-                                <div class="col-sm-4 fw-bold text-muted">Email</div>
-                                <div class="col-sm-8">{{ Auth::user()->email }}</div>
-
-                                <div class="col-sm-4 fw-bold text-muted">Role</div>
-                                <div class="col-sm-8">
-                                    <span class="badge bg-primary px-3 py-2">Administrator</span>
-                                </div>
-
-                                <div class="col-sm-4 fw-bold text-muted">Status</div>
-                                <div class="col-sm-8">
-                                    <span class="badge bg-success px-3 py-2">Aktif</span>
-                                </div>
-
-                                <div class="col-sm-4 fw-bold text-muted">Bergabung</div>
-                                <div class="col-sm-8">
-                                    {{ \Carbon\Carbon::parse(Auth::user()->created_at)->format('d F Y') }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0 justify-content-center pb-4">
-                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-                            data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i> Tutup
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

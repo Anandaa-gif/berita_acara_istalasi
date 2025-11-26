@@ -44,6 +44,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/berita-acara/export/excel', [BeritaAcaraController::class, 'export'])->name('berita_acara.export.excel');
 
 
+    Route::put('/profile/update', [ProfileController::class, 'updateProfile'])->name('profile.update');
+
+
     Route::get('/admin/teknisi', [TeknisiController::class, 'index'])->name('admin.teknisi.index');
     Route::get('/admin/teknisi/create', [TeknisiController::class, 'create'])->name('admin.teknisi.create');
     Route::post('/admin/teknisi/store', [TeknisiController::class, 'store'])->name('admin.teknisi.store');
@@ -53,3 +56,5 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
 });
 require __DIR__ . '/auth.php';
+
+

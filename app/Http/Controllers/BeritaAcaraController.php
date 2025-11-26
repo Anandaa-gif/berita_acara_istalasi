@@ -7,26 +7,21 @@ use App\Models\BeritaAcara;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;       
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 
 class BeritaAcaraController extends Controller
 {
-    /**
-     * Tampilkan semua data berita acara
-     */
     public function index(Request $request)
     {
-        // Ambil daftar berita acara (paginate agar links() bekerja).
         $beritaAcaras = BeritaAcara::latest()->paginate(15);
 
-        // Ambil daftar tahun berdasarkan kolom tanggal_registrasi
         $tahunList = BeritaAcara::selectRaw('YEAR(tanggal_registrasi) as tahun')
             ->distinct()
             ->orderBy('tahun', 'desc')
             ->pluck('tahun');
 
-        // Jika kosong, sediakan tahun sekarang agar dropdown tidak kosong
         if ($tahunList->isEmpty()) {
             $tahunList = collect([date('Y')]);
         }
@@ -34,19 +29,102 @@ class BeritaAcaraController extends Controller
         return view('berita_acara.index', compact('beritaAcaras', 'tahunList'));
     }
 
-
-
-    /**
-     * Form tambah data
-     */
     public function create()
     {
         return view('berita_acara.create');
     }
 
-    /**
-     * Simpan data baru
-     */
+    // ================== KIRIM KE GRUP TELEGRAM ==================
+    private function kirimNotifTelegram($bai)
+    {
+        $token   = env('TELEGRAM_BOT_TOKEN');
+        $chat_id = env('TELEGRAM_GROUP_ID');
+
+        if (!$token || !$chat_id) {
+            Log::warning('TELEGRAM: Token atau Chat ID kosong di .env');
+            return;
+        }
+
+        $pesan = "BERITA ACARA BARU!\n\n" .
+            "No. BAI       : *{$bai->id}*\n" .
+            "Pelanggan     : {$bai->nama_lengkap}\n" .
+            "No HP         : {$bai->no_hp}\n" .
+            "Alamat        : {$bai->alamat_lengkap}\n" .
+            "Paket         : {$bai->paket_berlangganan}\n" .
+            "Teknisi       : {$bai->nama_teknisi_1}" . ($bai->nama_teknisi_2 ? " & {$bai->nama_teknisi_2}" : "") . "\n" .
+            "Tanggal       : " . $bai->tanggal_registrasi->format('d-m-Y') . "\n\n" .
+            "Lihat: " . route('berita_acara.show', $bai->id);
+
+        $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            'chat_id'    => $chat_id,
+            'text'       => $pesan,
+            'parse_mode' => 'Markdown',
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Gagal kirim Telegram: ' . $response->body());
+        } else {
+            Log::info('Telegram terkirim untuk BAI ID: ' . $bai->id);
+        }
+    }
+
+    // ================== KIRIM WA KE PELANGGAN VIA WATZAP.ID ==================
+    // ================== KIRIM WA KE PELANGGAN (SUDAH AMAN 100%) ==================
+    private function kirimWelcomeWAPelanggan($bai)
+    {
+        try {
+            // NORMALISASI NOMOR HP – BEBAS 08 / 62 / +62 / SPASI → PASTI JADI 62xxx
+            $phone = preg_replace('/[^0-9]/', '', $bai->no_hp); // hapus semua kecuali angka
+
+            if (strlen($phone) < 10) {
+                Log::warning("Nomor HP terlalu pendek: {$bai->no_hp}");
+                return;
+            }
+
+            // Ubah 08xxx → 62xxx
+            if (substr($phone, 0, 1) === '0') {
+                $phone = '62' . substr($phone, 1);
+            }
+            // Kalau sudah 62xx atau +62xx → tetap
+            elseif (substr($phone, 0, 2) !== '62') {
+                $phone = '62' . $phone;
+            }
+
+            $message = "*TERIMA KASIH SUDAH BERLANGGANAN MEGADATA ISP!*\n\n" .
+                "Halo *{$bai->nama_lengkap}*,\n\n" .
+                "Instalasi internet Anda sudah selesai!\n\n" .
+                "*Detail Berlangganan*\n" .
+                "• Paket       : {$bai->paket_berlangganan}\n" .
+                "• Biaya Reg   : Rp " . number_format($bai->biaya_registrasi) . "\n" .
+                "• Teknisi     : {$bai->nama_teknisi_1}" . ($bai->nama_teknisi_2 ? " & {$bai->nama_teknisi_2}" : "") . "\n" .
+                "• Tanggal     : " . $bai->tanggal_registrasi->format('d-m-Y') . "\n\n" .
+                "Silakan cek kecepatan internet Anda sekarang!\n" .
+                "Ada kendala? Balas pesan ini atau hubungi kami.\n\n" .
+                "Terima kasih atas kepercayaannya!\n\n" .
+                "Salam cepat,\n" .
+                "*MEGADATA ISP Besuki*";
+
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post('https://api.watzap.id/v1/send_message', [
+                    'api_key'   => env('WATZAP_API_KEY'),
+                    'device_id' => env('WATZAP_DEVICE_ID', '1'),
+                    'number'    => $phone,
+                    'message'   => $message,
+                    'type'      => 'text',
+                ]);
+
+            if ($response->successful() && str_contains(strtolower($response->body()), 'success')) {
+                Log::info("WA Pelanggan TERKIRIM → {$phone} (BAI ID: {$bai->id})");
+            } else {
+                Log::warning("Gagal kirim WA pelanggan → {$phone} | Response: " . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error("Error kirim WA pelanggan: " . $e->getMessage());
+        }
+    }
+
+    // ================== STORE – INPUT DARI TEKNISI (BEBAS 08 / 62) ==================
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -54,7 +132,7 @@ class BeritaAcaraController extends Controller
             'no_ktp' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',
             'alamat_lengkap' => 'required|string',
-            'no_hp' => 'required|string|max:20',
+            'no_hp' => 'required|string|min:10|max:20', // boleh 08 / 62 / +62
             'tanggal_registrasi' => 'required|date',
             'jenis_perangkat' => 'required|string|max:100',
             'mac_address' => 'nullable|string|max:100',
@@ -74,55 +152,51 @@ class BeritaAcaraController extends Controller
         try {
             $data = $validated;
 
-            // Upload gambar jika ada
+            // NORMALISASI NOMOR HP SEBELUM DISIMPAN KE DATABASE
+            $noHp = preg_replace('/[^0-9]/', '', $data['no_hp']);
+            if (substr($noHp, 0, 1) === '0') {
+                $noHp = '62' . substr($noHp, 1);
+            } elseif (substr($noHp, 0, 2) !== '62') {
+                $noHp = '62' . $noHp;
+            }
+            $data['no_hp'] = $noHp;
+            // =================================================================
+
+            // Upload foto
             foreach (['foto_rumah', 'foto_odp', 'foto_dokumentasi_pelanggan'] as $field) {
                 if ($request->hasFile($field)) {
                     $data[$field] = $request->file($field)->store('berita_acara', 'public');
                 }
             }
 
-            BeritaAcara::create($data);
+            $beritaAcara = BeritaAcara::create($data);
 
-            return redirect()->route('berita_acara.index')->with('success', 'Berita Acara berhasil disimpan!');
+            // Kirim notifikasi otomatis
+            $this->kirimNotifTelegram($beritaAcara);
+            $this->kirimWelcomeWAPelanggan($beritaAcara);
+
+            return redirect()->route('berita_acara.index')
+                ->with('success', 'Berita Acara berhasil disimpan! Notifikasi Telegram & WhatsApp otomatis terkirim!');
         } catch (\Exception $e) {
-            Log::error('Gagal menyimpan Berita Acara: ' . $e->getMessage());
+            Log::error('Gagal simpan BAI: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }
-
-    /**
-     * Tampilkan detail berita acara
-     */
     public function show($id)
     {
-        try {
-            $beritaAcara = BeritaAcara::findOrFail($id);
-            return view('berita_acara.show', compact('beritaAcara'));
-        } catch (\Exception $e) {
-            Log::error('Gagal menampilkan detail: ' . $e->getMessage());
-            return back()->with('error', 'Data tidak ditemukan');
-        }
+        $beritaAcara = BeritaAcara::findOrFail($id);
+        return view('berita_acara.show', compact('beritaAcara'));
     }
 
-    /**
-     * Form edit berita acara
-     */
     public function edit($id)
     {
-        try {
-            $beritaAcara = BeritaAcara::findOrFail($id);
-            return view('berita_acara.edit', compact('beritaAcara'));
-        } catch (\Exception $e) {
-            Log::error('Gagal membuka form edit: ' . $e->getMessage());
-            return back()->with('error', 'Data tidak ditemukan');
-        }
+        $beritaAcara = BeritaAcara::findOrFail($id);
+        return view('berita_acara.edit', compact('beritaAcara'));
     }
 
-    /**
-     * Update data berita acara
-     */
     public function update(Request $request, $id)
     {
+        // validasi sama seperti store, cuma accept_terms jadi optional
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'no_ktp' => 'required|string|max:50',
@@ -151,124 +225,83 @@ class BeritaAcaraController extends Controller
 
             foreach (['foto_rumah', 'foto_odp', 'foto_dokumentasi_pelanggan'] as $field) {
                 if ($request->hasFile($field)) {
-                    // Hapus lama
-                    if ($beritaAcara->$field) Storage::disk('public')->delete($beritaAcara->$field);
+                    if ($beritaAcara->$field) {
+                        Storage::disk('public')->delete($beritaAcara->$field);
+                    }
                     $data[$field] = $request->file($field)->store('berita_acara', 'public');
                 }
             }
 
             $beritaAcara->update($data);
 
-            return redirect()->route('berita_acara.index')->with('success', 'Data berhasil diperbarui!');
+            return redirect()->route('berita_acara.index')
+                ->with('success', 'Data berhasil diperbarui!');
         } catch (\Exception $e) {
-            Log::error('Gagal update data: ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan saat update: ' . $e->getMessage());
+            Log::error('Gagal update: ' . $e->getMessage());
+            return back()->with('error', 'Gagal update: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Hapus data berita acara
-     */
     public function destroy($id)
     {
         try {
             $beritaAcara = BeritaAcara::findOrFail($id);
             foreach (['foto_rumah', 'foto_odp', 'foto_dokumentasi_pelanggan'] as $field) {
-                if ($beritaAcara->$field) Storage::disk('public')->delete($beritaAcara->$field);
+                if ($beritaAcara->$field) {
+                    Storage::disk('public')->delete($beritaAcara->$field);
+                }
             }
             $beritaAcara->delete();
             return back()->with('success', 'Data berhasil dihapus');
         } catch (\Exception $e) {
-            Log::error('Error deleting data: ' . $e->getMessage());
-            return back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+            Log::error('Error delete: ' . $e->getMessage());
+            return back()->with('error', 'Gagal hapus data');
         }
     }
 
-    /**
-     * Export PDF
-     */
     public function exportPdf($id)
     {
-        try {
-            $beritaAcara = BeritaAcara::findOrFail($id);
+        $beritaAcara = BeritaAcara::findOrFail($id);
 
-            // Convert tanda tangan & foto menjadi base64
-            $ttdFields = ['tanda_tangan_pelanggan', 'tanda_tangan_petugas', 'foto_rumah', 'foto_odp', 'foto_dokumentasi_pelanggan'];
-            foreach ($ttdFields as $field) {
-                if ($beritaAcara->$field && file_exists(storage_path('app/public/' . $beritaAcara->$field))) {
-                    $beritaAcara->{$field . '_base64'} = 'data:image/png;base64,' . base64_encode(file_get_contents(storage_path('app/public/' . $beritaAcara->$field)));
-                } else {
-                    $beritaAcara->{$field . '_base64'} = null;
-                }
-            }
-
-            $pdf = Pdf::loadView('berita_acara.pdf', compact('beritaAcara'))->setPaper('a4', 'portrait');
-            $fileName = 'BeritaAcara_' . str_replace(' ', '_', $beritaAcara->nama_lengkap) . '_' . date('YmdHis') . '.pdf';
-            return $pdf->download($fileName);
-        } catch (\Exception $e) {
-            Log::error('Error exporting PDF: ' . $e->getMessage());
-            return back()->with('error', 'Gagal export PDF: ' . $e->getMessage());
+        $fields = ['tanda_tangan_pelanggan', 'tanda_tangan_petugas', 'foto_rumah', 'foto_odp', 'foto_dokumentasi_pelanggan'];
+        foreach ($fields as $field) {
+            $path = storage_path('app/public/' . $beritaAcara->$field);
+            $beritaAcara->{$field . '_base64'} = $beritaAcara->$field && file_exists($path)
+                ? 'data:image/png;base64,' . base64_encode(file_get_contents($path))
+                : null;
         }
+
+        $pdf = Pdf::loadView('berita_acara.pdf', compact('beritaAcara'))->setPaper('a4', 'portrait');
+        $fileName = 'BeritaAcara_' . str_replace(' ', '_', $beritaAcara->nama_lengkap) . '_' . date('YmdHis') . '.pdf';
+
+        return $pdf->download($fileName);
     }
 
-
-    /**
-     * Kirim pesan WhatsApp via Watzap
-     */
     public function sendWhatsapp($id)
     {
         $beritaAcara = BeritaAcara::findOrFail($id);
 
-        // Format nomor WA (ubah 0 menjadi 62)
         $phone = preg_replace('/[^0-9]/', '', $beritaAcara->no_hp);
         if (substr($phone, 0, 1) === '0') {
             $phone = '62' . substr($phone, 1);
         }
 
-        // URL file PDF (pastikan file sudah ada di folder storage/pdf_berita_acara)
-        $pdfUrl = url('storage/pdf_berita_acara/BeritaAcara_' . $beritaAcara->nama_lengkap . '.pdf');
+        $message = "*BERITA ACARA INSTALASI*\nMEGADATA ISP Besuki\n\n" .
+            "Terima kasih telah berlangganan!\n\n" .
+            "*Detail Pelanggan*\n" .
+            "- Nama: {$beritaAcara->nama_lengkap}\n" .
+            "- No HP: {$beritaAcara->no_hp}\n" .
+            "- Alamat: {$beritaAcara->alamat_lengkap}\n\n" .
+            "*Paket*: {$beritaAcara->paket_berlangganan}\n" .
+            "*Biaya Registrasi*: Rp " . number_format($beritaAcara->biaya_registrasi) . "\n" .
+            "*Teknisi*: {$beritaAcara->nama_teknisi_1}" . ($beritaAcara->nama_teknisi_2 ? " & {$beritaAcara->nama_teknisi_2}" : "") . "\n\n" .
+            "Terima kasih!\n_MEGADATA ISP_";
 
-        // Generate URL login
-        $loginUrl = route('login');
+        $waUrl = "https://api.whatsapp.com/send?phone={$phone}&text=" . urlencode($message);
 
-        // Template pesan WhatsApp
-        $message = <<<EOT
-*BERITA ACARA INSTALASI*
-MEGADATA ISP Besuki
-
-━━━━━━━━━━━━━━━━━━━━━━━
-
-Terima kasih telah berlangganan internet di MEGADATA ISP.
-
-📄 *Detail Pelanggan:*
-- Nama: {$beritaAcara->nama_lengkap}
-- No KTP: {$beritaAcara->no_ktp}
-- No HP: {$beritaAcara->no_hp}
-- Alamat: {$beritaAcara->alamat_lengkap}
-
-💡 *Paket Berlangganan:*
-- Rp. {$beritaAcara->paket_berlangganan} {$beritaAcara->kecepatan}
-- Biaya Registrasi: Rp {$beritaAcara->biaya_registrasi}
-
-👨‍🔧 *Teknisi:*
-- {$beritaAcara->nama_teknisi_1}
-- {$beritaAcara->nama_teknisi_2}
-
-Simpan dokumen ini sebagai bukti instalasi Anda.
-Terima kasih atas kepercayaan Anda!
-
-_MEGADATA ISP - Koneksi Internet Cepat & Terpercaya_
-EOT;
-
-        // Encode agar aman untuk URL
-        $encoded = urlencode($message);
-
-        // Format link WhatsApp yang valid di semua perangkat
-        $waUrl = "https://api.whatsapp.com/send?phone={$phone}&text={$encoded}";
-
-        // Arahkan langsung ke WhatsApp
         return redirect()->away($waUrl);
     }
+
     public function export(Request $request)
     {
         $request->validate([
@@ -279,6 +312,6 @@ EOT;
         return Excel::download(
             new BeritaAcaraExport($request->bulan, $request->tahun),
             "berita-acara-{$request->bulan}-{$request->tahun}.xlsx"
-        );  
+        );
     }
 }

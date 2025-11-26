@@ -19,9 +19,8 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot()
     {
-        // Hubungkan model BeritaAcara dengan Observer
         BeritaAcara::observe(BeritaAcaraObserver::class);
     }
 }
