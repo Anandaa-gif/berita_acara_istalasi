@@ -62,13 +62,6 @@
                             Export Excel
                         </button>
                     </form>
-
-                    <!-- Kanan: Tambah Data -->
-                    <a href="{{ url('/berita-acara/create') }}"
-                        class="btn btn-success d-flex align-items-center gap-2 px-4 py-2 fw-medium shadow-sm rounded-pill">
-                        <i class="fas fa-plus"></i>
-                        Tambah Data
-                    </a>
                 </div>
 
                 <!-- Tabel -->
