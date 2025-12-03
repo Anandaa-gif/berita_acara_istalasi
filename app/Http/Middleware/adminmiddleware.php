@@ -17,7 +17,7 @@ class adminmiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::check() && Auth::user()->role === 'teknisi') {
-            return redirect('/user/index');
+            return redirect('/user.index');
         }
         return $next($request);
     }
