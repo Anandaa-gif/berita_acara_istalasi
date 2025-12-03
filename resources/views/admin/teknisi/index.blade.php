@@ -102,49 +102,146 @@
         </div>
     </div>
 
-    <style>
-        /* Card & Header */
-        .card-header {
-            background: linear-gradient(135deg, #4361ee, #3f37c9);
+<style>
+    :root {
+        --sidebar-bg: linear-gradient(180deg, #1e3a8a, #166534);
+        --hover: rgba(255, 255, 255, 0.2);
+        --primary: #1e3a8a;
+        --light-blue: #e3f2fd;
+    }
+
+    body {
+        background: #f6f8fa;
+        min-height: 100vh;
+        padding-top: 0px;
+
+        /* FIX TERPENTING */
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+        width: 260px;
+        background: var(--sidebar-bg);
+        color: white;
+        padding: 1.4rem 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        overflow-y: auto;
+        z-index: 1000;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link {
+        color: rgba(255, 255, 255, 0.85);
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+        background: var(--hover);
+        color: #fff !important;
+    }
+
+    .content {
+        margin-left: 260px;
+        padding: 2rem;
+        transition: margin-left 0.3s ease;
+        width: 100%;
+        overflow-x: auto !important;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 992px) {
+        .sidebar {
+            width: 80px;
         }
 
-        /* Scroll Horizontal (PERBAIKAN UTAMA) */
-        .teknisi-scroll {
+        .sidebar h4,
+        .sidebar .nav-link span {
+            display: none;
+        }
+
+        .sidebar .nav-link {
+            justify-content: center;
+            padding: 15px 0;
+        }
+
+        .sidebar .nav-link i {
+            font-size: 1.4rem;
+        }
+
+        .content {
+            margin-left: 80px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .sidebar {
+            width: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+
+            /* FIX UTAMA AGAR HP BISA SCROLL */
+            position: static !important;
+            height: auto !important;
+        }
+
+        .content {
+            margin-left: 0 !important;
+            width: 100% !important;
             overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch;
         }
 
-        .teknisi-scroll::-webkit-scrollbar {
-            height: 6px;
+        body {
+            overflow-x: auto !important;
         }
+    }
 
-        .teknisi-scroll::-webkit-scrollbar-thumb {
-            background: #c2c7d0;
-            border-radius: 10px;
-        }
+    /* PROFIL MENU */
+    .profile-menu-item {
+        color: #212529 !important;
+        background-color: transparent !important;
+        transition: all 0.25s ease;
+        border-radius: 0.375rem;
+        margin: 4px 0px;
+    }
 
-        .teknisi-scroll::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
+    .profile-menu-item:hover,
+    .profile-menu-item:focus,
+    .profile-menu-item:active {
+        background-color: var(--primary) !important;
+        color: white !important;
+    }
 
-        /* Tabel */
-        .table th {
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    /* LOGOUT */
+    .logout-item {
+        color: #dc3545 !important;
+        font-weight: 500;
+        border-radius: 0.375rem;
+        margin: 4px 0px;
+        transition: all 0.25s ease;
+        background-color: transparent !important;
+    }
 
-        .table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
+    .logout-item i {
+        color: #dc3545 !important;
+    }
 
-        /* Responsif */
-        @media (max-width: 768px) {
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-    </style>
+    .logout-item:hover {
+        background-color: #dc3545 !important;
+        color: #ffffff !important;
+    }
+
+    .logout-item:hover i {
+        color: #ffffff !important;
+    }
+</style>
+
 @endsection
