@@ -13,22 +13,47 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <!-- CSS Custom untuk Footer Tetap di Bawah -->
     <style>
         html, body {
             height: 100%;
             margin: 0;
             background-color: #f8f9fa;
+
+            /* FIX: izinkan HP scroll kiri–kanan */
+            overflow-x: auto !important;
         }
 
         .wrapper {
             min-height: 100%;
             display: flex;
             flex-direction: column;
+
+            /* FIX: jangan kunci lebar */
+            max-width: 100% !important;
+            overflow-x: visible !important;
         }
 
         main {
             flex: 1;
+
+            /* FIX: konten bisa scroll */
+            overflow-x: auto !important;
+            max-width: 100% !important;
+        }
+
+        /* FIX PENTING: semua tabel di semua halaman responsif scroll */
+        .table-responsive {
+            width: 100% !important;
+            display: block !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+        /* Fix untuk tabel yang lebarnya melebihi layar HP */
+        table {
+            width: max-content !important;
+            min-width: 600px;
+            white-space: nowrap !important;
         }
 
         footer {
@@ -46,7 +71,6 @@
 
 <body>
 
-    <!-- WRAPPER UNTUK FLEX -->
     <div class="wrapper">
 
         <!-- NAVBAR -->
@@ -58,12 +82,12 @@
             </div>
         </nav>
 
-        <!-- KONTEN UTAMA -->
+        <!-- KONTEN -->
         <main class="container py-4">
             @yield('content')
         </main>
 
-        <!-- FOOTER SELALU DI BAWAH -->
+        <!-- FOOTER -->
         <footer class="text-center">
             <div class="container">
                 <small class="text-muted">
@@ -74,7 +98,7 @@
 
     </div>
 
-    <!-- Bootstrap 5 JS (WAJIB!) -->
+    <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>

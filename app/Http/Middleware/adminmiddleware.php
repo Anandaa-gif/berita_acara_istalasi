@@ -9,16 +9,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class adminmiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->role === 'teknisi') {
-            return redirect('/user/index');
+        // Hanya boleh admin
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
+            return redirect('/login')->withErrors([
+                'email' => 'Anda tidak memiliki akses ke halaman admin.'
+            ]);
         }
+
         return $next($request);
     }
 }

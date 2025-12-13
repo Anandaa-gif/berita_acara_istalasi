@@ -7,7 +7,14 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TeknisiController;
 use App\Http\Controllers\UserViewController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 
+
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:1,1');
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 Route::get('/', function () {
@@ -55,6 +62,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
 
 });
-require __DIR__ . '/auth.php';
+// require __DIR__ . '/auth.php';
 
 

@@ -695,7 +695,7 @@
                         } else {
                             window.location.href = '/'; // fallback
                         }
-                    }, 1200);
+                    }, 1);
                 })
                 .catch(error => {
                     // Tangani error validasi atau login gagal
