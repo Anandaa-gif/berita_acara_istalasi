@@ -361,9 +361,9 @@
                         <label class="form-label">Biaya Registrasi <span class="text-danger">*</span></label>
                         <select name="biaya_registrasi" class="form-select" required>
                             <option value="">Pilih Biaya</option>
-                            <option value="150000" {{ old('biaya_registrasi') == '150000' ? 'selected' : '' }}>Rp.
+                            <option value="150000" {{ old('biaya_registrasi') == '150.000' ? 'selected' : '' }}>Rp.
                                 150.000</option>
-                            <option value="250000" {{ old('biaya_registrasi') == '250000' ? 'selected' : '' }}>Rp.
+                            <option value="250000" {{ old('biaya_registrasi') == '250.000' ? 'selected' : '' }}>Rp.
                                 250.000</option>
                         </select>
                     </div>

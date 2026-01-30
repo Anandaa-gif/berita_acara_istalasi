@@ -120,27 +120,25 @@ class UserViewController extends Controller
     // INI YANG DIPERBAIKI: KEMBALIKAN JSON, BUKAN REDIRECT
     public function sendWhatsapp($id)
     {
-        $beritaAcara = BeritaAcara::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
+        try {
+            // ❗ JANGAN batasi user_id jika route public
+            $beritaAcara = BeritaAcara::findOrFail($id);
 
-        $phone = preg_replace('/[^0-9]/', '', $beritaAcara->no_hp);
-        if (substr($phone, 0, 1) === '0') {
-            $phone = '62' . substr($phone, 1);
-        }
+            // Normalisasi nomor HP
+            $phone = preg_replace('/[^0-9]/', '', $beritaAcara->no_hp);
+            if (substr($phone, 0, 1) === '0') {
+                $phone = '62' . substr($phone, 1);
+            }
 
-        // Pastikan PDF sudah ada
-        $fileName = 'BeritaAcara_' . str_replace(' ', '_', $beritaAcara->nama_lengkap) . '.pdf';
-        $pdfPath = 'pdf_berita_acara/' . $fileName;
+            // Pastikan folder & PDF
+            $fileName = 'BeritaAcara_' . str_replace(' ', '_', $beritaAcara->nama_lengkap) . '.pdf';
+            $pdfPath = 'pdf_berita_acara/' . $fileName;
 
-        if (!Storage::disk('public')->exists($pdfPath)) {
-            $this->generateAndSavePdf($beritaAcara);
-        }
+            if (!Storage::disk('public')->exists($pdfPath)) {
+                $this->generateAndSavePdf($beritaAcara);
+            }
 
-        $pdfUrl = url('storage/' . $pdfPath);
-        $loginUrl = route('login');
-
-        $message = <<<EOT
+            $message = <<<EOT
 *BERITA ACARA INSTALASI BARU*
 MEGADATA ISP BESUKI
 
@@ -158,6 +156,10 @@ Paket Berlangganan:
 - Rp. {$beritaAcara->paket_berlangganan} {$beritaAcara->kecepatan}
 - Biaya Registrasi: Rp {$beritaAcara->biaya_registrasi}
 
+Perangkat:
+- Modem dipinjamkan oleh pihak MEGADATA ISP dan tetap menjadi milik MEGADATA ISP.
+- Pelanggan wajib menjaga dan menggunakan perangkat dengan baik selama masa berlangganan.
+
 Teknisi:
 - {$beritaAcara->nama_teknisi_1}
 - {$beritaAcara->nama_teknisi_2}
@@ -168,8 +170,17 @@ Terima kasih atas kepercayaan Anda!
 _MEGADATA ISP - Internet Cepat & Stabil_
 EOT;
 
-        $waUrl = "https://api.whatsapp.com/send?phone={$phone}&text=" . urlencode($message);
+            $waUrl = "https://api.whatsapp.com/send?phone={$phone}&text=" . urlencode($message);
 
-        return response()->json(['wa_url' => $waUrl]);
+            return response()->json([
+                'status' => true,
+                'wa_url' => $waUrl
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

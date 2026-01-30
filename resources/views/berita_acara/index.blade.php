@@ -118,17 +118,17 @@
                                             <a href="{{ route('berita_acara.pdf', $acara->id) }}"
                                                 class="btn btn-sm btn-danger d-flex align-items-center gap-1 rounded-pill"
                                                 title="Download PDF">
-                                                <i class="fas fa-file-pdf"></i> <span
-                                                    class="d-none d-sm-inline">PDF</span>
+                                                <i class="fas fa-file-pdf"></i> <span class="d-none d-sm-inline">PDF</span>
                                             </a>
 
                                             <!-- Chat (WhatsApp) -->
-                                            <a href="{{ route('berita_acara.sendWhatsapp', $acara->id) }}"
-                                                class="btn btn-sm btn-success text-white d-flex align-items-center gap-1 rounded-pill"
-                                                title="Kirim via WhatsApp" target="_blank">
-                                                <i class="fab fa-whatsapp"></i> <span
-                                                    class="d-none d-sm-inline">Chat</span>
-                                            </a>
+                                            <button type="button"
+                                                class="btn btn-sm btn-success d-flex align-items-center gap-1 rounded-pill btn-wa"
+                                                data-id="{{ $acara->id }}">
+                                                <i class="fab fa-whatsapp"></i>
+                                                <span class="d-none d-sm-inline">Chat</span>
+                                            </button>
+
 
                                             <!-- Hapus -->
                                             <form action="{{ route('berita_acara.destroy', $acara->id) }}" method="POST"
@@ -169,13 +169,42 @@
     </div>
 
     <!-- Auto Open WhatsApp -->
-    @if (session('whatsapp_url'))
-        <script>
-            setTimeout(() => {
-                window.open('{{ session('whatsapp_url') }}', '_blank');
-            }, 600);
-        </script>
-    @endif
+    <script>
+        document.querySelectorAll('.btn-wa').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const id = this.dataset.id;
+                if (!id) {
+                    alert('ID tidak ditemukan!');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/berita-acara/${id}/send-whatsapp`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.status) {
+                        window.open(data.wa_url, '_blank');
+                    } else {
+                        alert('Gagal: ' + (data.message || 'Tidak ada pesan error'));
+                    }
+                } catch (err) {
+                    console.error('WhatsApp Error:', err);
+                    alert('Gagal terhubung ke server\n\nDetail: ' + err.message);
+                }
+            });
+        });
+    </script>
+
 
     <style>
         /* Card & Header */

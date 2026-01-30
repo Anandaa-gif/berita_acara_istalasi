@@ -11,13 +11,11 @@ class adminmiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Hanya boleh admin
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
-            return redirect('/login')->withErrors([
-                'email' => 'Anda tidak memiliki akses ke halaman admin.'
-            ]);
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('user.index');
         }
 
+        // Role admin → lanjut
         return $next($request);
     }
 }

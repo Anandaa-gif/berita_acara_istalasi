@@ -11,11 +11,11 @@ class teknisimiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Hanya izinkan user dengan role 'teknisi'
-        if (!Auth::check() || Auth::user()->role !== 'teknisi') {
-            return redirect('/login')->withErrors(['email' => 'Anda tidak memiliki akses ke halaman ini.']);
+        if (Auth::user()->role !== 'teknisi') {
+            return redirect()->route('dashboard.index');
         }
 
+        // Role admin → lanjut
         return $next($request);
     }
 }

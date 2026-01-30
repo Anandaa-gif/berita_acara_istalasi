@@ -10,27 +10,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
 
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])
-    ->middleware('throttle:1,1');
-
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware(['auth', 'teknisi'])->group(
-    function () {
-        Route::get('/user/berita-acara', [UserViewController::class, 'index'])->name('user.index');
-        Route::get('/user/berita-acara/create', [UserViewController::class, 'create'])->name('user.berita_acara.create');
-        Route::post('/user/berita-acara/store', [UserViewController::class, 'store'])->name('user.store');
-        Route::get('/user/berita-acara/{id}', [UserViewController::class, 'show'])->name('user.show');
-        Route::get('/user/berita-acara/{id}/pdf', [UserViewController::class, 'exportPdf'])->name('user.pdf');
-        Route::get('/user/berita-acara/{id}/send-whatsapp', [UserViewController::class, 'sendWhatsapp'])->name('user.sendWhatsapp');
-    }
-);
+
 
 Route::get('/pelanggan/berita-acara/{id}', [PelangganController::class, 'show'])->name('pelanggan.show');
 Route::get('/pelanggan/berita-acara/{id}/pdf', [PelangganController::class, 'exportPdf'])->name('pelanggan.pdf');
@@ -47,7 +32,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::put('/berita-acara/{id}', [BeritaAcaraController::class, 'update'])->name('berita_acara.update');
     Route::delete('/berita-acara/{id}', [BeritaAcaraController::class, 'destroy'])->name('berita_acara.destroy');
     Route::get('/berita-acara/{id}/pdf', [BeritaAcaraController::class, 'exportPdf'])->name('berita_acara.pdf');
-    Route::get('/berita-acara/{id}/send-whatsapp', [BeritaAcaraController::class, 'sendWhatsapp'])->name('berita_acara.sendWhatsapp');
+
     Route::get('/berita-acara/export/excel', [BeritaAcaraController::class, 'export'])->name('berita_acara.export.excel');
 
 
@@ -58,10 +43,23 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/teknisi/create', [TeknisiController::class, 'create'])->name('admin.teknisi.create');
     Route::post('/admin/teknisi/store', [TeknisiController::class, 'store'])->name('admin.teknisi.store');
     Route::delete('/admin/teknisi/{id}', [TeknisiController::class, 'destroy'])->name('admin.teknisi.destroy');
-
-
-
+    Route::get('/admin/teknisi/{id}/password', [TeknisiController::class, 'editPassword'])->name('admin.teknisi.password');
+    Route::put('/admin/teknisi/{id}', [TeknisiController::class, 'update'])->name('admin.teknisi.update');
+    Route::put('/admin/teknisi/{id}/password', [TeknisiController::class, 'updatePassword'])->name('admin.teknisi.password.update');
 });
-// require __DIR__ . '/auth.php';
+Route::get('/berita-acara/{id}/send-whatsapp', [BeritaAcaraController::class, 'sendWhatsapp'])->name('berita_acara.sendWhatsapp');
+Route::get('/user/berita-acara/{id}/send-whatsapp', [UserViewController::class, 'sendWhatsapp'])->name('user.sendWhatsapp');
+
+Route::middleware(['auth', 'teknisi'])->group(
+    function () {
+        Route::get('/user/berita-acara', [UserViewController::class, 'index'])->name('user.index');
+        Route::get('/user/berita-acara/create', [UserViewController::class, 'create'])->name('user.berita_acara.create');
+        Route::post('/user/berita-acara/store', [UserViewController::class, 'store'])->name('user.store');
+        Route::get('/user/berita-acara/{id}', [UserViewController::class, 'show'])->name('user.show');
+        Route::get('/user/berita-acara/{id}/pdf', [UserViewController::class, 'exportPdf'])->name('user.pdf');
+
+    }
+);
+require __DIR__ . '/auth.php';
 
 

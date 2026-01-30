@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class BeritaAcara extends Model
 {
@@ -12,7 +13,7 @@ class BeritaAcara extends Model
     protected $table = 'data_pelanggan';
 
     protected $fillable = [
-        'user_id', // ✅ tambahkan ini supaya data ikut tersimpan
+        'user_id',
         'nama_lengkap',
         'no_ktp',
         'email',
@@ -32,6 +33,10 @@ class BeritaAcara extends Model
         'foto_rumah',
         'foto_odp',
         'foto_dokumentasi_pelanggan',
+    ];
+
+    protected $casts = [
+        'tanggal_registrasi' => 'date',
     ];
 
     public function user()
